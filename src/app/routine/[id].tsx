@@ -225,9 +225,10 @@ export default function RoutineScreen() {
       <Card highlighted accent={colors.module.training}>
         {template.description ? <AppText variant="caption">{template.description}</AppText> : null}
         {isCardio ? (
-          <AppText variant="caption" color={colors.cyan}>
-            El registro de la caminadora (velocidad, inclinación, minutos y kcal estimadas) llega en la Fase 2.
-          </AppText>
+          <>
+            <AppText variant="caption">Registra velocidad, inclinación y minutos; la app calcula las kcal y la XP.</AppText>
+            <Button label="Registrar caminadora" icon="walk" onPress={() => router.push('/cardio')} />
+          </>
         ) : (
           <>
             <AppText variant="caption">

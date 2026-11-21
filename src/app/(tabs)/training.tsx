@@ -191,7 +191,9 @@ export default function TrainingScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`${WEEKDAY_LABEL[d.weekday]}: ${t ? t.name : 'descanso'}. Abrir rutina`}
                 disabled={!t}
-                onPress={() => t && router.push({ pathname: '/routine/[id]', params: { id: t.id } })}
+                onPress={() =>
+                  t && (t.kind === 'cardio' ? router.push('/cardio') : router.push({ pathname: '/routine/[id]', params: { id: t.id } }))
+                }
               >
                 <AppText variant="label" color={isToday ? colors.cyan : colors.textFaint}>
                   {WEEKDAY_LABEL[d.weekday]}
