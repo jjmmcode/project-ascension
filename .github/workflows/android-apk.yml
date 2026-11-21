@@ -1,0 +1,67 @@
+# Compila un APK instalable en cada push y lo publica como Release de GitHub.
+# Desde el teléfono: GitHub → Releases → "APK <rama>" → descargar e instalar.
+name: APK Android
+
+on:
+  push:
+    branches: [main, 'feat/**']
+  workflow_dispatch:
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Pruebas
+        run: npx jest --ci
+
+      - name: Generar proyecto Android (prebuild)
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: 1
+
+      - name: Compilar APK (release, arm64)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Publicar Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-${GITHUB_REF_NAME//\//-}"
+          APK="project-ascension-${GITHUB_REF_NAME//\//-}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK"
+          MSG="$(git log -1 --pretty=%s)"
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          gh release create "$TAG" "$APK" \
+            --target "$GITHUB_SHA" \
+            --title "APK ${GITHUB_REF_NAME} · build ${GITHUB_RUN_NUMBER}" \
+            --notes "Último cambio: ${MSG} (${GITHUB_SHA::7}). Descárgalo e instálalo encima de la versión anterior: tus datos se conservan." \
+            --prerelease
