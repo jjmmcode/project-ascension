@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '@/features/sound/sound';
 import { AppText, XPBar } from '@/components/ui';
 import { colors, radius, spacing } from '@/theme';
@@ -25,6 +26,8 @@ export function RestTimer({
   onSkip: () => void;
   onDone: () => void;
 }) {
+  // La app dibuja detrás de la barra de navegación de Android: hay que dejar su alto libre.
+  const insets = useSafeAreaInsets();
   const [now, setNow] = useState(Date.now());
   const fired = useRef(false);
   useEffect(() => {
@@ -43,7 +46,7 @@ export function RestTimer({
   }, [left, onDone]);
   const done = left === 0;
   return (
-    <View style={[styles.bar, done && styles.done]} accessibilityLiveRegion="polite">
+    <View style={[styles.bar, { bottom: spacing.md + insets.bottom }, done && styles.done]} accessibilityLiveRegion="polite">
       <View style={styles.row}>
         <View style={styles.flex}>
           <AppText variant="label" color={done ? colors.success : colors.cyan}>

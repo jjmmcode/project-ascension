@@ -4,6 +4,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { playSound } from '@/features/sound/sound';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { AppText, Button, Card, EmptyState, RankBadge, Screen, TextField, XPBar } from '@/components/ui';
@@ -402,6 +403,7 @@ function ResultView({
 
 export default function WorkoutSessionScreen() {
   const db = useSQLiteContext();
+  const insets = useSafeAreaInsets();
   const profile = useProfileStore((s) => s.profile);
   const xpNow = useProfileStore((s) => s.totalXp);
   const refreshStore = useProfileStore((s) => s.refresh);
@@ -710,7 +712,7 @@ export default function WorkoutSessionScreen() {
         disabled={doneCount < MIN_COMPLETED_SETS}
       />
       <Button label="Descartar sesión" variant="danger" onPress={discard} />
-      {rest ? <View style={{ height: 170 }} /> : null}
+      {rest ? <View style={{ height: 170 + insets.bottom }} /> : null}
     </Screen>
     {rest && !undo ? (
       <RestTimer
@@ -723,7 +725,7 @@ export default function WorkoutSessionScreen() {
       />
     ) : null}
     {undo ? (
-      <View style={styles.snackbar} accessibilityLiveRegion="polite">
+      <View style={[styles.snackbar, { bottom: spacing.xl + insets.bottom }]} accessibilityLiveRegion="polite">
         <AppText variant="body" style={styles.flex}>
           Serie {undo.setNumber} de {undo.exerciseName} eliminada
         </AppText>
