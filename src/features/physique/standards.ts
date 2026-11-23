@@ -61,6 +61,7 @@ export const STANDARDS: Record<string, Standard> = {
   'ek-0018': load('approx', 0.06, 0.11, 0.17, 0.25, 0.33), // elevaciones laterales (por mano)
   'ek-0035': load('approx', 0.05, 0.09, 0.14, 0.2, 0.27), // posteriores en polea
   'ek-9308': load('approx', 0.07, 0.13, 0.2, 0.3, 0.39), // elevación frontal con disco
+  'ek-9309': load('approx', 0.15, 0.3, 0.55, 0.8, 1.15), // extensión sobre la cabeza en polea (Strength Level, hombres)
   // Antebrazo
   'ek-0257': load('approx', 0.08, 0.13, 0.2, 0.28, 0.37), // curl inverso (por mano)
   'ek-9306': load('approx', 0.08, 0.14, 0.22, 0.32, 0.42), // curl de muñeca (por mano)

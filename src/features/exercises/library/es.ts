@@ -931,4 +931,19 @@ export const ES: Record<string, SpanishText> = {
     ],
     tips: ["Sin balancear el tronco ni impulsarte con la cadera.", "No subas más allá de los hombros: el trapecio toma el trabajo."],
   },
+  '9309': {
+    name: "Extensión de tríceps sobre la cabeza en polea",
+    summary: "Trabaja el tríceps con el brazo por encima de la cabeza, donde la cabeza larga queda más estirada.",
+    steps: [
+      "Pon la polea a la altura del pecho o más arriba, con la cuerda (o una barra) enganchada.",
+      "Toma la cuerda con ambas manos, date la vuelta de espaldas a la máquina y da un paso adelante con un pie, inclinando un poco el tronco.",
+      "Con los codos doblados junto a la cabeza y las manos tras la nuca, estira los brazos al frente y hacia arriba hasta casi bloquear los codos.",
+      "Vuelve controlando hasta sentir el estiramiento en la parte de atrás del brazo.",
+    ],
+    tips: [
+      "Los codos se mantienen fijos apuntando al frente: no los abras ni los bajes.",
+      "El tronco no se mueve; si te balanceas para terminar la repetición, baja el peso.",
+      "Anota el peso que marca la columna de la polea.",
+    ],
+  },
 };

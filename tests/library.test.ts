@@ -10,8 +10,8 @@ import { FEATURED_IDS } from '@/features/training/exerciseOptions';
 
 describe('biblioteca Everkinetic', () => {
   it('cada ejercicio tiene dos imágenes, nombre y al menos un músculo principal', () => {
-    // + jalón agarre abierto, dominadas asistidas 6 de core/antebrazo, press en máquina y elevación frontal con disco (ilustración de referencia o sin dibujo)
-    expect(LIBRARY.length).toBe(EVERKINETIC.length + 10);
+    // + jalón agarre abierto, dominadas asistidas 6 de core/antebrazo, press en máquina, elevación frontal con disco y extensión de tríceps en polea (ilustración de referencia o sin dibujo)
+    expect(LIBRARY.length).toBe(EVERKINETIC.length + 11);
     for (const e of LIBRARY) {
       if (e.images) expect(e.images).toHaveLength(2);
       else expect(e.imageNote).toBeTruthy();

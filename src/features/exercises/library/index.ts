@@ -216,6 +216,13 @@ const EXTRA: Array<{ record: EverkineticRecord; imagesFrom: string | null; image
     imagesFrom: '0033',
     imageNote: 'Ilustración de referencia: elevación frontal con mancuerna. Con disco lo sujetas con ambas manos por los lados (a las 3 y a las 9).',
   },
+  // Pedido por el usuario el 23-11-2026.
+  {
+    record: { ...core('9309', 'cable-overhead-triceps-extension', 'Cable Overhead Triceps Extension', ['triceps brachii'], []), equipment: ['cable', 'rope'] },
+    imagesFrom: '0201',
+    imageNote:
+      'Ilustración de referencia: extensión de tríceps sobre la cabeza con barra. En la polea te pones de espaldas a la máquina, con la cuerda tras la nuca y un pie adelantado.',
+  },
 ];
 
 /**
