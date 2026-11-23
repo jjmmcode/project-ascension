@@ -8,7 +8,10 @@ import { workoutsRepo } from '@/database/repositories/workouts';
 import { templatesRepo } from '@/database/repositories/templates';
 import { ensureDefaultPlan, startFromTemplate } from '@/services/plan';
 import { finishWorkout } from '@/services/workoutSession';
-import { applyPenance, endRest, penaltyAmount, restPeriods, simulatePenance, startRest } from '@/services/penance';
+import { applyPenance, applyRankDecay, endRest, penaltyAmount, restPeriods, simulatePenance, startRest } from '@/services/penance';
+import { getPassedRank, setPassedRank } from '@/services/progression';
+import { settingsRepo } from '@/database/repositories/settings';
+import { z } from 'zod';
 import { awardXp, totalXp } from '@/services/xp';
 import { levelFromXp, totalXpForLevel } from '@/features/progression/leveling';
 import { computeAttributes } from '@/features/attributes/engine';
@@ -114,6 +117,45 @@ describe('servicio de penitencia', () => {
     expect(p).toEqual({ start: D0, end: d(13) });
     await endRest(db, profileId, new Date(`${d(3)}T15:00:00Z`));
     expect(await restPeriods(db, profileId)).toEqual([{ start: D0, end: d(2) }]);
+    db.close();
+  });
+});
+
+describe('pérdida de rango por inactividad', () => {
+  it('7 días seguidos con el emblema destrozado → baja una letra; máx. una por semana; se recupera con el examen', async () => {
+    const db = createTestDb();
+    await migrate(db);
+    const profileId = (await profilesRepo.create(db, { displayName: 'Test', heightCm: 175 })).id;
+    // Rango C (mínimo nivel 20) con nivel 17 → 3 niveles abajo: destrozado
+    await setPassedRank(db, profileId, 'C');
+    await awardXp(db, { profileId, source: 'exam', sourceId: 'x', idempotencyKey: 'x', at: new Date('2026-11-01T12:00:00Z') });
+    await db.runAsync('UPDATE xp_events SET amount = ? WHERE idempotency_key = ?', [totalXpForLevel(17), 'x']);
+    expect(levelFromXp(await totalXp(db, profileId)).level).toBe(17);
+    const day = (n: number) => new Date(Date.parse('2026-11-10T15:00:00Z') + n * 86_400_000);
+
+    expect(await applyRankDecay(db, profileId, day(0))).toEqual({ demoted: null, daysLeft: 7 });
+    expect(await applyRankDecay(db, profileId, day(6))).toEqual({ demoted: null, daysLeft: 1 });
+    expect(await getPassedRank(db, profileId)).toBe('C');
+    const r = await applyRankDecay(db, profileId, day(7));
+    expect(r.demoted).toEqual({ from: 'C', to: 'D' });
+    expect(await getPassedRank(db, profileId)).toBe('D');
+    // Con D (mínimo 10) el nivel 17 ya no está destrozado: se acabó la cuenta
+    expect(r.daysLeft).toBeNull();
+    expect(await applyRankDecay(db, profileId, day(30))).toEqual({ demoted: null, daysLeft: null });
+    expect((await settingsRepo.get(db, profileId, 'rank.demotions', z.array(z.any())))?.length).toBe(1);
+    db.close();
+  });
+
+  it('el modo descanso congela la cuenta y reparar el emblema la reinicia', async () => {
+    const db = createTestDb();
+    await migrate(db);
+    const profileId = (await profilesRepo.create(db, { displayName: 'Test', heightCm: 175 })).id;
+    await setPassedRank(db, profileId, 'B'); // mínimo 30, nivel 1 → destrozado
+    const day = (n: number) => new Date(Date.parse('2026-11-10T15:00:00Z') + n * 86_400_000);
+    await applyRankDecay(db, profileId, day(0));
+    await startRest(db, profileId, day(3));
+    expect((await applyRankDecay(db, profileId, day(8))).demoted).toBeNull(); // descanso: se reinicia la cuenta
+    expect(await getPassedRank(db, profileId)).toBe('B');
     db.close();
   });
 });

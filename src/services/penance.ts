@@ -3,7 +3,7 @@ import type { Db } from '@/database/types';
 import { transaction } from '@/database/transaction';
 import { newId } from '@/database/ids';
 import { settingsRepo } from '@/database/repositories/settings';
-import { levelFromXp, minLevelFor, totalXpForLevel, type Rank } from '@/features/progression/leveling';
+import { GENERAL_RANKS, levelFromXp, minLevelFor, totalXpForLevel, type Rank } from '@/features/progression/leveling';
 import {
   addDays,
   badgeDamage,
@@ -15,6 +15,7 @@ import {
 } from '@/features/penance/engine';
 import { localDateKey, nowIso } from '@/lib/time';
 import { totalXp } from './xp';
+import { getPassedRank, setPassedRank } from './progression';
 
 const REST_KEY = 'rest.periods';
 const MAX_LEVEL_KEY = 'level.max';
@@ -137,4 +138,56 @@ export async function simulatePenance(db: Db, profileId: string, days: number, n
     pending.push({ event: e, amount });
   }
   return { days, date, state, pending, levelNow, levelThen: levelFromXp(total).level, xpThen: total };
+}
+
+// ─── Pérdida de rango (aprobado el 23-11-2026) ──────────────────────────────
+
+/** Días seguidos con el emblema destrozado (3+ niveles bajo el mínimo del rango) para bajar una letra. */
+export const DEMOTION_DAYS = 7;
+const SHATTERED_KEY = 'badge.shatteredSince';
+const DEMOTIONS_KEY = 'rank.demotions';
+const dateKeySchema = z.string().nullable();
+const demotionsSchema = z.array(z.object({ from: z.string(), to: z.string(), date: z.string() }));
+
+export interface RankDecay {
+  /** Rango perdido ahora (una vez). */
+  demoted: { from: Rank; to: Rank } | null;
+  /** Días que faltan para perder el rango si el emblema sigue destrozado; null si no está destrozado. */
+  daysLeft: number | null;
+}
+
+/**
+ * Si el emblema lleva 7 días seguidos destrozado, el rango baja una letra (máx. una por semana).
+ * El modo descanso congela la cuenta. Se recupera volviendo a aprobar el examen (sin XP de examen repetida).
+ */
+export async function applyRankDecay(db: Db, profileId: string, now: Date = new Date()): Promise<RankDecay> {
+  const today = localDateKey(now);
+  const rank = await getPassedRank(db, profileId);
+  const level = levelFromXp(await totalXp(db, profileId)).level;
+  const since = await settingsRepo.get(db, profileId, SHATTERED_KEY, dateKeySchema);
+  if (rank === 'E' || damageFor(level, rank) < 3) {
+    if (since) await settingsRepo.set(db, profileId, SHATTERED_KEY, dateKeySchema, null);
+    return { demoted: null, daysLeft: null };
+  }
+  if (!since || (await activeRest(db, profileId))) {
+    // Empieza (o se congela, en descanso) la cuenta desde hoy
+    await settingsRepo.set(db, profileId, SHATTERED_KEY, dateKeySchema, today);
+    return { demoted: null, daysLeft: DEMOTION_DAYS };
+  }
+  const due = addDays(since, DEMOTION_DAYS);
+  if (today < due) return { demoted: null, daysLeft: daysBetween(today, due) };
+  const to = GENERAL_RANKS[GENERAL_RANKS.indexOf(rank) - 1]!;
+  await transaction(db, async (db) => {
+    await setPassedRank(db, profileId, to);
+    await settingsRepo.set(db, profileId, SHATTERED_KEY, dateKeySchema, today);
+    const history = (await settingsRepo.get(db, profileId, DEMOTIONS_KEY, demotionsSchema)) ?? [];
+    await settingsRepo.set(db, profileId, DEMOTIONS_KEY, demotionsSchema, [...history, { from: rank, to, date: today }]);
+  });
+  const stillShattered = damageFor(level, to) >= 3;
+  if (!stillShattered) await settingsRepo.set(db, profileId, SHATTERED_KEY, dateKeySchema, null);
+  return { demoted: { from: rank, to }, daysLeft: stillShattered ? DEMOTION_DAYS : null };
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
 }

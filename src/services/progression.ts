@@ -16,9 +16,16 @@ import { awardXp, totalXp } from './xp';
 const PASSED_KEY = 'rank.passed';
 const rankSchema = z.enum(GENERAL_RANKS as [Rank, ...Rank[]]);
 
-/** Rango general aprobado (persistente: no baja aunque luego bajen los músculos). */
+/**
+ * Rango general aprobado. No baja porque bajen los músculos; solo baja por inactividad
+ * (emblema destrozado 7 días seguidos, ver `applyRankDecay` en services/penance).
+ */
 export async function getPassedRank(db: Db, profileId: string): Promise<Rank> {
   return (await settingsRepo.get(db, profileId, PASSED_KEY, rankSchema)) ?? 'E';
+}
+
+export async function setPassedRank(db: Db, profileId: string, rank: Rank): Promise<void> {
+  await settingsRepo.set(db, profileId, PASSED_KEY, rankSchema, rank);
 }
 
 export interface RankEvaluation {

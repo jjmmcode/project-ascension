@@ -7,7 +7,7 @@ import { backfillWorkoutEnergy, workoutsThisWeek } from '@/services/workoutSessi
 import { applyPlanUpdates, ensureDefaultPlan, todayPlan, type TodayPlan } from '@/services/plan';
 import { getPassedRank } from '@/services/progression';
 import type { Rank } from '@/features/progression/leveling';
-import { activeRest, applyPenance, type PenanceSnapshot } from '@/services/penance';
+import { activeRest, applyPenance, applyRankDecay, type PenanceSnapshot, type RankDecay } from '@/services/penance';
 import type { RestPeriod } from '@/features/penance/engine';
 
 /**
@@ -33,6 +33,8 @@ interface ProfileState {
   rest: RestPeriod | null;
   /** Últimos fallos aplicados en este refresco (para avisar). */
   lastPenalties: PenanceSnapshot['applied'];
+  /** Pérdida de rango por inactividad: la aplicada ahora y la cuenta regresiva. */
+  rankDecay: RankDecay | null;
   refresh: (db: Db) => Promise<void>;
 }
 
@@ -50,12 +52,13 @@ export const useProfileStore = create<ProfileState>((set) => ({
   penance: null,
   rest: null,
   lastPenalties: [],
+  rankDecay: null,
   refresh: async (db) => {
     set((s) => ({ status: s.status === 'ready' ? 'ready' : 'loading' }));
     try {
       const profile = await profilesRepo.getActive(db);
       if (!profile) {
-        set({ status: 'ready', error: null, profile: null, latestMetric: null, goals: {}, totalXp: 0, weekWorkouts: 0, inProgress: null, today: null, generalRank: 'E', penance: null, rest: null, lastPenalties: [] });
+        set({ status: 'ready', error: null, profile: null, latestMetric: null, goals: {}, totalXp: 0, weekWorkouts: 0, inProgress: null, today: null, generalRank: 'E', penance: null, rest: null, lastPenalties: [], rankDecay: null });
         return;
       }
       if (profile.onboardingCompletedAt) {
@@ -64,6 +67,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
         await backfillWorkoutEnergy(db, profile.id);
       }
       const penance = profile.onboardingCompletedAt ? await applyPenance(db, profile.id) : null;
+      const rankDecay = profile.onboardingCompletedAt ? await applyRankDecay(db, profile.id) : null;
       const rest = await activeRest(db, profile.id);
       const [latestMetric, goals, xp, week, inProgress, today, generalRank] = await Promise.all([
         bodyMetricsRepo.latest(db, profile.id),
@@ -74,7 +78,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
         todayPlan(db, profile.id),
         getPassedRank(db, profile.id),
       ]);
-      set({ status: 'ready', error: null, profile: (await profilesRepo.getById(db, profile.id)) ?? profile, latestMetric, goals, totalXp: xp, weekWorkouts: week, inProgress, today, generalRank, penance, rest, lastPenalties: penance?.applied ?? [] });
+      set({ status: 'ready', error: null, profile: (await profilesRepo.getById(db, profile.id)) ?? profile, latestMetric, goals, totalXp: xp, weekWorkouts: week, inProgress, today, generalRank, penance, rest, lastPenalties: penance?.applied ?? [], rankDecay });
     } catch (e) {
       set({ status: 'error', error: e instanceof Error ? e.message : String(e) });
     }

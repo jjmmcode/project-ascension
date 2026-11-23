@@ -6,6 +6,8 @@ import { useProfileStore } from '@/stores/profileStore';
 import { endRest, simulatePenance, startRest, type Simulation } from '@/services/penance';
 import { MAX_REST_DAYS, PENANCE_DAY, SESSIONS_NEEDED } from '@/features/penance/engine';
 import { formatNumber } from '@/lib/numbers';
+import { GENERAL_RANKS, minLevelFor } from '@/features/progression/leveling';
+import { damageFor, DEMOTION_DAYS } from '@/services/penance';
 import { colors, MIN_TOUCH, radius, spacing } from '@/theme';
 
 const dmy = (key: string) => `${key.slice(8, 10)}-${key.slice(5, 7)}`;
@@ -14,6 +16,8 @@ const dmy = (key: string) => `${key.slice(8, 10)}-${key.slice(5, 7)}`;
 export function PenanceStatusCard() {
   const p = useProfileStore((s) => s.penance);
   const rest = useProfileStore((s) => s.rest);
+  const decay = useProfileStore((s) => s.rankDecay);
+  const rank = useProfileStore((s) => s.generalRank);
   if (!p) return null;
   const { state } = p;
   const cards: React.ReactNode[] = [];
@@ -53,6 +57,19 @@ export function PenanceStatusCard() {
         <AppText variant="caption">
           Llevas {state.daysInactive} días sin entrenar. {left <= 1 ? 'Mañana' : `En ${left} días`} empieza una misión de
           penitencia: {SESSIONS_NEEDED} sesiones en 7 días o pierdes XP.
+        </AppText>
+      </Card>,
+    );
+  }
+  if (decay?.daysLeft != null && rank !== 'E') {
+    const prev = GENERAL_RANKS[GENERAL_RANKS.indexOf(rank) - 1];
+    cards.push(
+      <Card key="decay" title="Emblema destrozado" accent={colors.danger} highlighted>
+        <AppText variant="caption">
+          {rest
+            ? `En modo descanso la cuenta está congelada.`
+            : `Si no recuperas niveles, en ${decay.daysLeft} ${decay.daysLeft === 1 ? 'día' : 'días'} pierdes el rango ${rank} y bajas a ${prev}.`}{' '}
+          Para repararlo vuelve al nivel {minLevelFor(rank) - 2} o más.
         </AppText>
       </Card>,
     );
@@ -122,6 +139,7 @@ export function SimulatorCard() {
   const db = useSQLiteContext();
   const profile = useProfileStore((s) => s.profile);
   const [sim, setSim] = useState<Simulation | null>(null);
+  const rank = useProfileStore((s) => s.generalRank);
 
   const run = async (days: number) => {
     if (profile) setSim(await simulatePenance(db, profile.id, days));
@@ -157,6 +175,11 @@ export function SimulatorCard() {
           <AppText variant="caption">
             Nivel {sim.levelNow} → {sim.levelThen}
           </AppText>
+          {damageFor(sim.levelThen, rank) >= 3 && rank !== 'E' ? (
+            <AppText variant="caption" color={colors.danger}>
+              Emblema {rank} destrozado: tras {DEMOTION_DAYS} días así, bajas a rango {GENERAL_RANKS[GENERAL_RANKS.indexOf(rank) - 1]}.
+            </AppText>
+          ) : null}
         </View>
       ) : null}
     </Card>

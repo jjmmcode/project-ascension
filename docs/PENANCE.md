@@ -17,9 +17,17 @@ Código: `src/features/penance/engine.ts` (lógica pura), `src/services/penance.
 
 ## Emblema roto
 
-El rango general nunca se pierde. Si tu nivel cae por debajo del mínimo del rango, el emblema muestra el daño
+El rango general no se pierde por bajar de nivel. Si tu nivel cae por debajo del mínimo del rango, el emblema muestra el daño
 (niveles por debajo, máximo 3): grieta → fractura (4 pedazos, color apagado, parpadeo) → destrozado. Al cambiar el daño
 se ve una animación de rotura o de reparación con su sonido. Se dibuja con SVG recortado en 4 pedazos.
+
+## Pérdida de rango (23-11-2026)
+
+Si el emblema pasa 7 días seguidos destrozado (3 o más niveles bajo el mínimo del rango), el rango baja una letra
+(máximo una por semana). Coincide con la evidencia: la fuerza se mantiene unas 3 semanas sin entrenar y después cae más
+rápido (McMaster et al., 2013). El modo descanso congela la cuenta. Para recuperar el rango hay que volver a su nivel y
+aprobar otra vez su examen (la XP del examen no se repite). Status muestra la cuenta regresiva; el historial queda en el
+ajuste `rank.demotions`.
 
 ## Simulador
 
