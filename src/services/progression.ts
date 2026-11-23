@@ -34,7 +34,7 @@ export const EXAM_XP = 200;
 /** Evalúa los exámenes pendientes, guarda el rango aprobado y da la XP de cada examen (una vez). */
 export async function evaluateRank(db: Db, profileId: string, now: Date = new Date()): Promise<RankEvaluation> {
   const physique = await computePhysique(db, profileId, now);
-  return transaction(db, async () => {
+  return transaction(db, async (db) => {
     let passed = await getPassedRank(db, profileId);
     const newlyPassed: Rank[] = [];
     let result = evaluateExams(passed, levelFromXp(await totalXp(db, profileId)).level, physique.ranks, PHYSIQUE_MUSCLES);

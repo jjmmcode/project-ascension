@@ -161,7 +161,7 @@ export const workoutsRepo = {
 
   /** Inicia una sesión. Si ya hay una en curso, la devuelve (nunca dos a la vez). */
   async start(db: Db, profileId: string, templateId: string | null = null): Promise<Workout> {
-    return transaction(db, async () => {
+    return transaction(db, async (db) => {
       const current = await workoutsRepo.getInProgress(db, profileId);
       if (current) return current;
       const id = newId();
@@ -181,7 +181,7 @@ export const workoutsRepo = {
 
   /** Añade una serie al ejercicio, copiando los valores de la anterior si existe. */
   async addSet(db: Db, workoutId: string, exerciseId: string, values?: Partial<SetInput>): Promise<WorkoutSet> {
-    return transaction(db, async () => {
+    return transaction(db, async (db) => {
       const prev = await db.getFirstAsync<SetRow>(
         `${SET_SELECT} WHERE s.workout_id = ? AND s.exercise_id = ? ORDER BY s.set_number DESC LIMIT 1`,
         [workoutId, exerciseId],
@@ -281,7 +281,7 @@ export const workoutsRepo = {
    */
   async swapExercise(db: Db, workoutId: string, fromExerciseId: string, toExerciseId: string): Promise<number> {
     if (fromExerciseId === toExerciseId) return 0;
-    return transaction(db, async () => {
+    return transaction(db, async (db) => {
       const clash = await db.getFirstAsync<{ n: number }>(
         'SELECT COUNT(*) AS n FROM workout_sets WHERE workout_id = ? AND exercise_id = ?',
         [workoutId, toExerciseId],

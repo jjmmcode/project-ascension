@@ -79,7 +79,7 @@ export async function applyPenance(db: Db, profileId: string, now: Date = new Da
   const before = levelFromXp(await totalXp(db, profileId)).level;
   const prevMax = (await settingsRepo.get(db, profileId, MAX_LEVEL_KEY, z.number())) ?? 1;
   if (before > prevMax) await settingsRepo.set(db, profileId, MAX_LEVEL_KEY, z.number(), before);
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     for (const e of state.events) {
       if (e.kind !== 'fail_xp' && e.kind !== 'fail_level') continue;
       const key = `penance:${profileId}:${e.kind}:${e.windowStart}`;

@@ -221,10 +221,10 @@ describe('onboarding', () => {
 
 describe('transacciones anidadas', () => {
   it('un fallo interno revierte solo el savepoint; uno externo revierte todo', async () => {
-    await transaction(db, async () => {
+    await transaction(db, async (db) => {
       await profilesRepo.create(db, { displayName: 'Exterior', heightCm: null });
       await expect(
-        transaction(db, async () => {
+        transaction(db, async (db) => {
           await profilesRepo.create(db, { displayName: 'Interior', heightCm: null });
           throw new Error('falla interna');
         }),
@@ -234,9 +234,9 @@ describe('transacciones anidadas', () => {
     expect(names).toEqual(['Exterior']);
 
     await expect(
-      transaction(db, async () => {
+      transaction(db, async (db) => {
         await profilesRepo.create(db, { displayName: 'Otro', heightCm: null });
-        await transaction(db, async () => undefined);
+        await transaction(db, async (db) => undefined);
         throw new Error('falla externa');
       }),
     ).rejects.toThrow('falla externa');

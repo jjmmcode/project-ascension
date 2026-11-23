@@ -127,7 +127,7 @@ const toSql = (v: unknown): SqlValue => {
 export async function restoreBackup(db: Db, backup: Backup): Promise<Record<string, number>> {
   const tables = await userTables(db);
   const counts: Record<string, number> = {};
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     for (const t of [...tables].reverse()) await db.runAsync(`DELETE FROM ${t}`, []);
     for (const t of tables) {
       const rows = backup.tables[t];

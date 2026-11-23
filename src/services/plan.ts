@@ -33,7 +33,7 @@ export function ensureDefaultPlan(db: Db, profileId: string): Promise<boolean> {
 async function seed(db: Db, profileId: string): Promise<boolean> {
   const seeded = await settingsRepo.get(db, profileId, SEEDED_KEY, z.boolean());
   if (seeded) return false;
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     const ids = new Map<string, string>();
     for (const t of DEFAULT_TEMPLATES) {
       const id = await templatesRepo.create(db, profileId, { name: t.name, description: t.description, kind: t.kind });
@@ -78,7 +78,7 @@ export async function todayPlan(db: Db, profileId: string, now: Date = new Date(
  * Si ya hay una sesión en curso, la devuelve sin tocarla.
  */
 export async function startFromTemplate(db: Db, profileId: string, templateId: string): Promise<Workout> {
-  return transaction(db, async () => {
+  return transaction(db, async (db) => {
     const current = await workoutsRepo.getInProgress(db, profileId);
     if (current) return current;
     const w = await workoutsRepo.start(db, profileId, templateId);
@@ -190,7 +190,7 @@ const UPDATE_2026_11_20 = 'plan.update.2026-11-20';
 async function update20261120(db: Db, profileId: string): Promise<void> {
   const done = await settingsRepo.get(db, profileId, UPDATE_2026_11_20, z.boolean());
   if (done) return;
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     const thursday = (await templatesRepo.schedule(db, profileId)).find((d) => d.weekday === 4);
     if (!thursday?.templateId) {
       const name = 'Hombro y antebrazo';
@@ -218,7 +218,7 @@ async function update20261120(db: Db, profileId: string): Promise<void> {
 async function update20261119(db: Db, profileId: string): Promise<void> {
   const done = await settingsRepo.get(db, profileId, UPDATE_2026_11_19, z.boolean());
   if (done) return;
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     const shoulders = (await templatesRepo.list(db, profileId)).find((t) => t.name === 'Hombro y antebrazo');
     if (shoulders) {
       const list = await templatesRepo.exercises(db, shoulders.id);

@@ -25,7 +25,7 @@ export async function migrate(db: Db, migrations: Migration[] = MIGRATIONS): Pro
 
   for (const m of migrations) {
     if (m.version <= current) continue;
-    await transaction(db, async () => {
+    await transaction(db, async (db) => {
       for (const sql of m.statements) await db.execAsync(sql);
       await db.runAsync('INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)', [
         m.version,

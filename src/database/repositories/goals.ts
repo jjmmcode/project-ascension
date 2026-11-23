@@ -46,7 +46,7 @@ export const goalsRepo = {
     const g = goalInputSchema.parse(input);
     const id = newId();
     const now = nowIso();
-    await transaction(db, async () => {
+    await transaction(db, async (db) => {
       await db.runAsync(
         `UPDATE goals SET status = 'archived', updated_at = ? WHERE profile_id = ? AND goal_type = ? AND status = 'active'`,
         [now, profileId, g.goalType],

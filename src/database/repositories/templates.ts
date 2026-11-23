@@ -124,7 +124,7 @@ export const templatesRepo = {
 
   /** Borrado lógico: las sesiones pasadas conservan su referencia; el día del plan queda libre. */
   async remove(db: Db, id: string): Promise<void> {
-    await transaction(db, async () => {
+    await transaction(db, async (db) => {
       await db.runAsync('UPDATE workout_templates SET deleted_at = ?, updated_at = ? WHERE id = ?', [nowIso(), nowIso(), id]);
       await db.runAsync('UPDATE workout_schedule SET template_id = NULL, is_rest = 1 WHERE template_id = ?', [id]);
     });
@@ -138,7 +138,7 @@ export const templatesRepo = {
   /** El ejercicio debe existir en `exercises` (ensureExercise). Se añade al final. */
   async addExercise(db: Db, templateId: string, exerciseId: string, input: TemplateExerciseInput): Promise<string> {
     const v = templateExerciseInputSchema.parse(input);
-    return transaction(db, async () => {
+    return transaction(db, async (db) => {
       const max = await db.getFirstAsync<{ p: number | null }>(
         'SELECT MAX(position) AS p FROM workout_template_exercises WHERE template_id = ?',
         [templateId],
@@ -167,7 +167,7 @@ export const templatesRepo = {
 
   /** Sube o baja un ejercicio intercambiando su posición con el vecino. */
   async move(db: Db, rowId: string, direction: -1 | 1): Promise<void> {
-    await transaction(db, async () => {
+    await transaction(db, async (db) => {
       const row = await db.getFirstAsync<{ template_id: string; position: number }>(
         'SELECT template_id, position FROM workout_template_exercises WHERE id = ?',
         [rowId],

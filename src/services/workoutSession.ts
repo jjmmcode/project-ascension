@@ -31,7 +31,7 @@ export class WorkoutValidationError extends Error {}
  * para que la XP refleje un entrenamiento real y no un toque accidental.
  */
 export async function finishWorkout(db: Db, workoutId: string, now: Date = new Date()): Promise<FinishResult> {
-  return transaction(db, async () => {
+  return transaction(db, async (db) => {
     const w = await workoutsRepo.getById(db, workoutId);
     if (!w) throw new WorkoutValidationError('La sesión no existe.');
     if (w.status !== 'in_progress') throw new WorkoutValidationError('La sesión ya estaba cerrada.');

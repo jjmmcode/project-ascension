@@ -26,7 +26,7 @@ export async function completeOnboarding(db: Db, input: OnboardingInput): Promis
   let profileId = '';
   const today = localDateKey();
 
-  await transaction(db, async () => {
+  await transaction(db, async (db) => {
     const profile = await profilesRepo.create(db, {
       displayName: input.displayName,
       heightCm: input.heightCm,

@@ -40,7 +40,7 @@ export async function awardXp(
   const at = args.at ?? new Date();
   const day = localDateKey(at);
 
-  return transaction(db, async () => {
+  return transaction(db, async (db) => {
     const dup = await db.getFirstAsync<{ id: string }>('SELECT id FROM xp_events WHERE idempotency_key = ?', [args.idempotencyKey]);
     if (dup) return { awarded: 0, reason: 'duplicate' as const };
 
