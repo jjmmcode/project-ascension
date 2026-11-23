@@ -2,26 +2,24 @@
 
 ## Curva de niveles (implementada en `src/features/progression/leveling.ts`)
 
-`xpToNext(L) = redondeo a decenas de 100 · L^1.5`
+`xpToNext(L) = redondeo a decenas de 45 · L^1.1` (curva aprobada el 23-11-2026; antes era `100 · L^1.5`,
+que dejaba el nivel 60 a ~32 años y el 100 a ~117 años de entrenamiento constante).
 
-| Nivel | XP para subir | XP acumulada para alcanzarlo |
-|---|---|---|
-| 1 | 100 | 0 |
-| 2 | 280 | 100 |
-| 5 | 1.120 | 1.700 |
-| 10 | 3.160 | 11.100 |
-| 20 | 8.940 | 67.140 |
+Tiempo aproximado con una semana realista (5 sesiones + 2 de caminadora + misión ≈ 650 XP):
 
-## Rangos
+| Nivel | XP para subir | XP acumulada | Tiempo aprox. | Rango que habilita |
+|---|---|---|---|---|
+| 1 | 50 | 0 | — | E |
+| 10 | 570 | 2.410 | ~1 mes | D |
+| 20 | 1.210 | 10.960 | ~4 meses | C |
+| 30 | 1.900 | 26.150 | ~10 meses | B |
+| 45 | 2.960 | 62.030 | ~1,8 años | A |
+| 60 | 4.070 | 114.150 | ~3,4 años | S |
+| 75 | 5.200 | 183.050 | ~5,4 años | SS |
+| 90 | 6.350 | 269.060 | ~8 años | SSS |
+| 100 | — | 336.080 | ~10 años | SSS+ |
 
-| Rango | Nivel mínimo |
-|---|---|
-| E | 1 |
-| D | 10 |
-| C | 20 |
-| B | 35 |
-| A | 50 |
-| S | 70 |
+El nivel mide constancia; la fuerza real la miden los exámenes de rango (más abajo).
 
 ## Recompensas base (configurables en `settings`, Etapa 5)
 
@@ -54,10 +52,12 @@ Cada stat se muestra con la etiqueta **"índice del juego"** y un botón *¿Cóm
 
 ## Rangos y examen de rango (20-11-2026)
 Nueve rangos: E (1), D (10), C (20), B (30), A (45), S (60), SS (75), SSS (90), SSS+ (100) — nivel mínimo entre
-paréntesis. Además del nivel, cada rango exige un examen de fuerza sobre 11 músculos, una letra por debajo:
-D 4 en D · C 6 en D · B 6 en C · A 8 en C · S 8 en B · SS 10 en B · SSS 8 en A · SSS+ 11 en A y 3 en S.
+paréntesis. Además del nivel, cada rango exige un examen de fuerza sobre 11 músculos, **de su misma letra o superior**
+(tabla aprobada el 23-11-2026): D 6 en D · C 6 en C · B 6 en B · A 6 en A · S 6 en S · SS 8 en S · SSS 10 en S ·
+SSS+ los 11 en S. Los ranks musculares siguen los niveles de fuerza estándar: D principiante, C novato,
+B intermedio (más fuerte que el 50 %), A avanzado (80 %), S élite (95 %).
 El examen se aprueba solo al cumplirse (+200 XP, una vez) y el rango aprobado se guarda (`rank.passed`): no baja
-aunque los músculos pierdan rank. Código: `features/progression/exams.ts`, `services/progression.ts`.
+aunque los músculos pierdan rank; solo se pierde por inactividad (ver PENANCE.md). Código: `features/progression/exams.ts`, `services/progression.ts`.
 
 ## Misión secundaria semanal
 Cada semana ISO se fija el músculo con menor rank de fuerza (sin datos = más débil). Meta: 10 series de ese

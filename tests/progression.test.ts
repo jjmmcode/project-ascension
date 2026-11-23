@@ -27,26 +27,32 @@ describe('examen de rango', () => {
   });
 
   it('nivel sin fuerza no basta: el examen queda pendiente con los músculos más cercanos', () => {
-    const m = muscles(['D', 'D', 'D', 'E', 'E']);
+    const m = muscles(['D', 'D', 'D', 'D', 'D', 'E', 'E']);
     const st = examStatus('D', 12, m, PHYSIQUE_MUSCLES);
     expect(st).toMatchObject({ levelOk: true, ready: false });
-    expect(st.requirements[0]).toMatchObject({ have: 3, count: 4, ok: false });
-    expect(st.requirements[0]!.closest[0]).toBe(PHYSIQUE_MUSCLES[3]); // E con más puntuación que los sin datos
+    expect(st.requirements[0]).toMatchObject({ have: 5, count: 6, ok: false });
+    expect(st.requirements[0]!.closest[0]).toBe(PHYSIQUE_MUSCLES[5]); // E con más puntuación que los sin datos
   });
 
   it('aprueba en orden varios exámenes si se cumplen y se detiene en el primero que falla', () => {
-    const m = muscles(['C', 'C', 'C', 'C', 'C', 'C', 'D']);
+    // Cada rango pide músculos de su misma letra: 6 en B aprueban D, C y B
+    const m = muscles(['B', 'B', 'B', 'B', 'B', 'B', 'C']);
     const r = evaluateExams('E', 35, m, PHYSIQUE_MUSCLES);
     expect(r.newlyPassed).toEqual(['D', 'C', 'B']);
     expect(r.passed).toBe('B');
     expect(r.next).toMatchObject({ rank: 'A', levelOk: false, ready: false }); // A pide nivel 45
   });
 
-  it('SSS+ exige 11 músculos en A y 3 en S', () => {
-    const all: MuscleRankLetter[] = Array(11).fill('A');
+  it('SSS+ exige los 11 músculos en S (élite); SS y SSS, 8 y 10', () => {
+    const all: MuscleRankLetter[] = Array(11).fill('S');
+    all[10] = 'A';
     expect(examStatus('SSS+', 100, muscles(all), PHYSIQUE_MUSCLES).ready).toBe(false);
-    all[0] = all[1] = all[2] = 'S';
+    expect(examStatus('SSS', 90, muscles(all), PHYSIQUE_MUSCLES).ready).toBe(true);
+    all[10] = 'S';
     expect(examStatus('SSS+', 100, muscles(all), PHYSIQUE_MUSCLES).ready).toBe(true);
+    const eight: MuscleRankLetter[] = [...Array(8).fill('S'), 'A', 'A', 'A'];
+    expect(examStatus('SS', 75, muscles(eight), PHYSIQUE_MUSCLES).ready).toBe(true);
+    expect(examStatus('SSS', 90, muscles(eight), PHYSIQUE_MUSCLES).ready).toBe(false);
   });
 });
 
@@ -93,6 +99,17 @@ describe('servicio de progresión', () => {
       if (strong2[s.exerciseId]) await workoutsRepo.updateSet(db, s.id, { repetitions: 12, weightKg: strong2[s.exerciseId]!, completed: true });
     }
     await finishWorkout(db, w2.id);
+    ev = await evaluateRank(db, profileId);
+    // 4 músculos: el examen D pide 6
+    expect(ev.passed).toBe('E');
+    await db.runAsync(`UPDATE workouts SET started_at = ? WHERE id = ?`, [new Date(Date.now() - 2 * 86_400_000).toISOString(), w2.id]);
+    const ch = (await templatesRepo.list(db, profileId)).find((t) => t.name === 'Pecho y tríceps')!;
+    const w3 = await startFromTemplate(db, profileId, ch.id);
+    const strong3: Record<string, number> = { 'ek-0042': 60, 'ek-0194': 25 };
+    for (const s of await workoutsRepo.listSets(db, w3.id)) {
+      if (strong3[s.exerciseId]) await workoutsRepo.updateSet(db, s.id, { repetitions: 10, weightKg: strong3[s.exerciseId]!, completed: true });
+    }
+    await finishWorkout(db, w3.id);
     ev = await evaluateRank(db, profileId);
     expect(ev.newlyPassed).toEqual(['D']);
     expect(await getPassedRank(db, profileId)).toBe('D');

@@ -9,15 +9,16 @@ import {
 describe('curva de progresión', () => {
   it('estado inicial: nivel 1, rango E, 0 XP', () => {
     const s = levelFromXp(0);
-    expect(s).toMatchObject({ level: 1, rank: 'E', totalXp: 0, xpIntoLevel: 0, xpForNext: 100 });
+    expect(s).toMatchObject({ level: 1, rank: 'E', totalXp: 0, xpIntoLevel: 0, xpForNext: 50 });
     expect(s.progress).toBe(0);
   });
 
   it('valores documentados de xpToNext', () => {
-    expect(xpToNext(1)).toBe(100);
-    expect(xpToNext(2)).toBe(280);
-    expect(xpToNext(5)).toBe(1120);
-    expect(xpToNext(10)).toBe(3160);
+    expect(xpToNext(1)).toBe(50);
+    expect(xpToNext(2)).toBe(100);
+    expect(xpToNext(5)).toBe(260);
+    expect(xpToNext(10)).toBe(570);
+    expect(xpToNext(60)).toBe(4070);
   });
 
   it('la XP requerida crece estrictamente', () => {
@@ -27,11 +28,20 @@ describe('curva de progresión', () => {
   });
 
   it('sube de nivel exactamente en el umbral', () => {
-    expect(levelFromXp(99).level).toBe(1);
-    expect(levelFromXp(100).level).toBe(2);
-    expect(levelFromXp(100).xpIntoLevel).toBe(0);
+    expect(levelFromXp(49).level).toBe(1);
+    expect(levelFromXp(50).level).toBe(2);
+    expect(levelFromXp(50).xpIntoLevel).toBe(0);
     expect(levelFromXp(totalXpForLevel(10)).level).toBe(10);
     expect(levelFromXp(totalXpForLevel(10) - 1).level).toBe(9);
+  });
+
+  it('calibración: con ~650 XP/semana, nivel 60 en ~3,5 años y 100 en ~10', () => {
+    const years = (l: number) => totalXpForLevel(l) / 650 / 52;
+    expect(years(10)).toBeLessThan(0.15);
+    expect(years(60)).toBeGreaterThan(3);
+    expect(years(60)).toBeLessThan(4);
+    expect(years(100)).toBeGreaterThan(9);
+    expect(years(100)).toBeLessThan(11);
   });
 
   it('rangos por nivel', () => {

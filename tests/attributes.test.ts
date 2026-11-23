@@ -49,11 +49,11 @@ const xpAt = (n: number, amount: number) => ({ amount, at: new Date(base + n * D
 
 describe('motor de atributos', () => {
   it('línea de tiempo de niveles según la XP', () => {
-    const t = levelTimeline([xpAt(0, 100), xpAt(1, 100), xpAt(2, 100), xpAt(3, 100)]);
-    expect(totalXpForLevel(2)).toBe(100);
-    expect(totalXpForLevel(3)).toBe(380);
+    const t = levelTimeline([xpAt(0, 25), xpAt(1, 25), xpAt(2, 50), xpAt(3, 50)]);
+    expect(totalXpForLevel(2)).toBe(50);
+    expect(totalXpForLevel(3)).toBe(150);
     expect([...t.keys()]).toEqual([2, 3]);
-    expect(t.get(2)).toBe(xpAt(0, 0).at);
+    expect(t.get(2)).toBe(xpAt(1, 0).at);
     expect(t.get(3)).toBe(xpAt(3, 0).at);
   });
 
@@ -82,7 +82,7 @@ describe('motor de atributos', () => {
 
   it('cada nivel da 3 puntos, priorizando lo más valioso y con variedad', () => {
     const input: AttributeInput = {
-      xpEvents: [xpAt(0, 100), xpAt(2, 100), xpAt(3, 100), xpAt(4, 100)],
+      xpEvents: [xpAt(0, 50), xpAt(2, 25), xpAt(3, 25), xpAt(4, 50)],
       workouts: [workout(0, [['ek-0042', 60, 8, 4]]), workout(2, [['ek-0042', 80, 8, 4], ['ek-0061', 20, 12, 6]])],
       gymDays: [1, 2, 4, 5],
       bodyweightKg: 84,

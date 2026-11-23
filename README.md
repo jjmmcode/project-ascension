@@ -35,8 +35,8 @@ funciona sin conexión y los datos se quedan en el teléfono.
 
 **Progresión RPG**
 
-- XP idempotente con topes diarios (no premia entrenar de más) y curva `100 · nivel^1,5`.
-- Rangos generales E → SSS+ con examen de rango; rank E–S por músculo según tu fuerza relativa (1RM estimado ÷ peso).
+- XP idempotente con topes diarios (no premia entrenar de más) y curva `45 · nivel^1,1` (nivel 100 ≈ 10 años de constancia).
+- Rangos generales E → SSS+ con examen de rango (cada rango pide músculos de su misma letra; SSS+ = los 11 en élite); rank E–S por músculo según tu fuerza relativa (1RM estimado ÷ peso).
 - Atributos estilo Xenoverse (FUE, VOL, DIS, NÚC, RES, VIT): 3 puntos por nivel que se reparten solos según lo que
   hiciste. Si dejas de entrenar un músculo 6 semanas, sus puntos se pierden y vuelven al retomarlo (memoria muscular).
 - Penitencia por inactividad: aviso a los 5 días; al 7.º, misión de 2 sesiones en 7 días. Si la fallas pierdes la XP del

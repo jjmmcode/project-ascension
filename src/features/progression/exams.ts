@@ -1,7 +1,9 @@
 /**
  * Examen de rango (lógica pura). Para subir de rango general hace falta el nivel mínimo y
- * además un mínimo de músculos con cierto rank de fuerza, una letra por debajo del rango
- * (acordado el 20-11-2026). Los exámenes se aprueban en orden; un rango aprobado no se pierde.
+ * además un mínimo de músculos con un rank de fuerza de su misma letra o superior
+ * (tabla aprobada el 23-11-2026). Del S en adelante se piden más músculos en S (élite: más
+ * fuerte que el 95 % de quienes entrenan), hasta los 11 en S para SSS+.
+ * Los exámenes se aprueban en orden; un rango solo se pierde por inactividad (services/penance).
  */
 import type { MuscleGroup } from '@/features/exercises/library';
 import { GENERAL_RANKS, minLevelFor, type MuscleRankLetter, type Rank } from './leveling';
@@ -15,17 +17,14 @@ export interface ExamRequirement {
 }
 
 export const RANK_EXAMS: Partial<Record<Rank, ExamRequirement[]>> = {
-  D: [{ count: 4, min: 'D' }],
-  C: [{ count: 6, min: 'D' }],
-  B: [{ count: 6, min: 'C' }],
-  A: [{ count: 8, min: 'C' }],
-  S: [{ count: 8, min: 'B' }],
-  SS: [{ count: 10, min: 'B' }],
-  SSS: [{ count: 8, min: 'A' }],
-  'SSS+': [
-    { count: 11, min: 'A' },
-    { count: 3, min: 'S' },
-  ],
+  D: [{ count: 6, min: 'D' }],
+  C: [{ count: 6, min: 'C' }],
+  B: [{ count: 6, min: 'B' }],
+  A: [{ count: 6, min: 'A' }],
+  S: [{ count: 6, min: 'S' }],
+  SS: [{ count: 8, min: 'S' }],
+  SSS: [{ count: 10, min: 'S' }],
+  'SSS+': [{ count: 11, min: 'S' }],
 };
 
 export interface RequirementStatus extends ExamRequirement {

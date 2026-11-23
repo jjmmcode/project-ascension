@@ -1,14 +1,15 @@
 /**
  * Curva de progresión RPG (lógica pura, sin dependencias de UI ni BD).
  *
- * XP necesaria para pasar del nivel L al L+1:
- *     xpToNext(L) = redondeo a decenas de 100 · L^1.5
+ * XP necesaria para pasar del nivel L al L+1 (curva aprobada el 23-11-2026):
+ *     xpToNext(L) = redondeo a decenas de 45 · L^1.1
  *
- *   L1→2: 100 · L2→3: 280 · L5→6: 1.120 · L10→11: 3.160 · L20→21: 8.940
+ *   L1→2: 50 · L5→6: 260 · L10→11: 570 · L30→31: 1.900 · L60→61: 4.070 · L99→100: 7.050
  *
- * Referencia: con ~4 entrenamientos/semana y registros diarios (~800 XP/semana)
- * se alcanza el rango D (nivel 10, 11.100 XP) en ≈ 3,5 meses. La curva premia constancia,
- * no volumen: los topes diarios (Etapa 5) impiden "farmear" XP.
+ * Calibrada con una semana realista (5 sesiones + 2 de caminadora + misión ≈ 650 XP):
+ * nivel 10 ≈ 1 mes, 30 ≈ 10 meses, 45 ≈ 2 años, 60 ≈ 3,5 años, 100 ≈ 10 años.
+ * La curva anterior (100 · L^1.5) dejaba el nivel 60 a 32 años y el 100 a 117.
+ * El nivel mide constancia; la fuerza la miden los exámenes (exams.ts). Los topes diarios impiden "farmear" XP.
  */
 
 /** Rank de un músculo (estándares de fuerza: 5 umbrales → E…S). */
@@ -42,7 +43,7 @@ export function xpToNext(level: number): number {
     throw new RangeError(`Nivel inválido: ${level}`);
   }
   if (level >= MAX_LEVEL) return 0;
-  return Math.round((100 * Math.pow(level, 1.5)) / 10) * 10;
+  return Math.round((45 * Math.pow(level, 1.1)) / 10) * 10;
 }
 
 /** XP total acumulada necesaria para *alcanzar* un nivel (nivel 1 = 0). */

@@ -174,7 +174,7 @@ export default function QuestsScreen() {
                 </AppText>
                 <AppText variant="caption">
                   Nivel {t.minLevel}
-                  {reqs.length ? ` · ${reqs.map((r) => `${r.count} músculos en ${r.min}+`).join(' y ')}` : ''}
+                  {reqs.length ? ` · ${reqs.map((r) => (r.min === 'S' ? `${r.count === 11 ? 'los 11' : r.count} músculos en S` : `${r.count} músculos en ${r.min} o más`)).join(' y ')}` : ''}
                 </AppText>
               </View>
             </View>
