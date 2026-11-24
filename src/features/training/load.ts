@@ -14,8 +14,18 @@ export function effectiveLoadKg(
 ): number | null {
   if (mode === 'external') return values.weightKg;
   if (values.bodyweightKg == null) return null;
-  if (mode === 'bodyweight') return values.bodyweightKg + (values.weightKg ?? 0);
+  // En peso corporal cada serie puede llevar lastre (suma) o asistencia (resta); son excluyentes.
+  if (mode === 'bodyweight') return values.bodyweightKg + (values.weightKg ?? 0) - (values.assistanceKg ?? 0);
   return values.bodyweightKg - (values.assistanceKg ?? 0);
+}
+
+/**
+ * Modo real de una serie: en ejercicios de peso corporal (dominadas, fondos) la serie
+ * es asistida si tiene asistencia anotada; si no, es con lastre (o sin nada).
+ */
+export function setLoadMode(exerciseMode: LoadMode, values: { assistanceKg: number | null }): LoadMode {
+  if (exerciseMode === 'bodyweight' && (values.assistanceKg ?? 0) > 0) return 'assisted';
+  return exerciseMode;
 }
 
 /** Mensaje de error si la combinación no tiene sentido, o null si es válida. */

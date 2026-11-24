@@ -9,7 +9,7 @@ import { playSound } from '@/features/sound/sound';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { AppText, Button, Card, EmptyState, RankBadge, Screen, TextField, XPBar } from '@/components/ui';
 import { bodyMetricsRepo } from '@/database';
-import { effectiveLoadKg, usableBodyweight, validateAssistance, type LoadMode } from '@/features/training/load';
+import { effectiveLoadKg, setLoadMode, usableBodyweight, validateAssistance, type LoadMode } from '@/features/training/load';
 import { workoutsRepo, type Workout, type WorkoutSet } from '@/database/repositories/workouts';
 import { findOption } from '@/features/training/exerciseOptions';
 import { getLibraryExercise } from '@/features/exercises/library';
@@ -60,7 +60,9 @@ interface SetRowProps {
 
 function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowProps) {
   const db = useSQLiteContext();
-  const mode = set.loadMode;
+  // Dominadas y fondos: cada serie puede ir con lastre (+) o con asistencia (−).
+  const canSwitch = set.loadMode === 'bodyweight';
+  const [mode, setMode] = useState<LoadMode>(setLoadMode(set.loadMode, set));
   const loadValue = mode === 'assisted' ? set.assistanceKg : set.weightKg;
   const timed = set.exerciseType === 'time';
   const [reps, setReps] = useState((timed ? set.durationSeconds : set.repetitions)?.toString() ?? '');
@@ -75,7 +77,7 @@ function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowPro
   // Peso corporal de la serie: el guardado en la serie (foto del día) o el actual.
   const bw = set.bodyweightKg ?? (mode === 'external' ? null : bodyweightKg);
 
-  const save = async (completed: boolean) => {
+  const save = async (completed: boolean, m: LoadMode = mode) => {
     const r = parseDecimal(reps);
     const w = parseDecimal(kg);
     if ((r !== null && (Number.isNaN(r) || !Number.isInteger(r))) || (w !== null && Number.isNaN(w))) {
@@ -86,7 +88,7 @@ function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowPro
       setError(timed ? 'Indica los segundos' : 'Indica las repeticiones');
       return false;
     }
-    const assistError = mode === 'assisted' ? validateAssistance(w, bw) : null;
+    const assistError = m === 'assisted' ? validateAssistance(w, bw) : null;
     if (assistError) {
       setError(assistError);
       return false;
@@ -95,9 +97,9 @@ function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowPro
       await workoutsRepo.updateSet(db, set.id, {
         repetitions: timed ? null : r,
         durationSeconds: timed ? r : null,
-        weightKg: mode === 'assisted' ? null : w,
-        assistanceKg: mode === 'assisted' ? w : null,
-        bodyweightKg: mode === 'external' ? null : bw,
+        weightKg: m === 'assisted' ? null : w,
+        assistanceKg: m === 'assisted' ? w : null,
+        bodyweightKg: m === 'external' ? null : bw,
         completed,
       });
       setError(null);
@@ -116,6 +118,15 @@ function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowPro
       void playSound('set_done');
     }
     if (ok) void Haptics.impactAsync(set.completed ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  /** Cambia la serie entre lastre y asistencia, conservando el número escrito. */
+  const switchMode = async () => {
+    const next: LoadMode = mode === 'assisted' ? 'bodyweight' : 'assisted';
+    setMode(next);
+    const ok = await save(set.completed, next);
+    if (!ok) setMode(mode);
+    else void Haptics.selectionAsync();
   };
 
   const openMenu = () =>
@@ -196,7 +207,24 @@ function SetRow({ set, bodyweightKg, onSaved, onDelete, onCompleted }: SetRowPro
               accessibilityLabel={`${FIELD_LABEL[mode]} serie ${set.setNumber}`}
               selectTextOnFocus
             />
-            <AppText variant="caption">{FIELD_LABEL[mode]}</AppText>
+            {canSwitch ? (
+              <Pressable
+                onPress={() => void switchMode()}
+                accessibilityRole="button"
+                accessibilityLabel={`Serie ${set.setNumber}: ${mode === 'assisted' ? 'asistencia' : 'lastre'}. Toca para cambiar a ${
+                  mode === 'assisted' ? 'lastre' : 'asistencia'
+                }`}
+                hitSlop={8}
+                style={[styles.modeChip, mode === 'assisted' && styles.modeChipAssist]}
+              >
+                <Ionicons name="swap-vertical" size={12} color={mode === 'assisted' ? colors.violet : colors.cyan} />
+                <AppText variant="caption" color={mode === 'assisted' ? colors.violet : colors.cyan}>
+                  {FIELD_LABEL[mode]}
+                </AppText>
+              </Pressable>
+            ) : (
+              <AppText variant="caption">{FIELD_LABEL[mode]}</AppText>
+            )}
           </View>
           <Pressable
             onPress={toggle}
@@ -830,6 +858,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.bgElevated,
   },
+  modeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.4)',
+  },
+  modeChipAssist: { borderColor: 'rgba(139, 92, 246, 0.5)' },
   input: { flex: 1, color: colors.text, fontSize: 18, fontWeight: '700', paddingVertical: 4 },
   check: {
     width: MIN_TOUCH,

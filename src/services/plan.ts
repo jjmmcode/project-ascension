@@ -6,6 +6,7 @@ import { templatesRepo, type Template, type TemplateExercise } from '@/database/
 import { ensureExercise, workoutsRepo, type Workout, type WorkoutSet } from '@/database/repositories/workouts';
 import { getLibraryExercise } from '@/features/exercises/library';
 import { loadStep, suggestProgression, type Suggestion } from '@/features/training/progression';
+import { setLoadMode } from '@/features/training/load';
 import { DEFAULT_SCHEDULE, DEFAULT_TEMPLATES, firstNumber } from '@/features/training/defaultPlan';
 import { findOption } from '@/features/training/exerciseOptions';
 import type { MuscleGroup } from '@/features/exercises/library';
@@ -111,7 +112,8 @@ export function suggestionFor(exerciseId: string, target: string, last: WorkoutS
   if (!opt || lib?.measure === 'time') return null;
   return suggestProgression({
     target,
-    loadMode: opt.ref.loadMode,
+    // Dominadas/fondos hechos con asistencia la última vez: la progresión es bajar la asistencia.
+    loadMode: last.some((l) => setLoadMode(opt.ref.loadMode, l) === 'assisted') ? 'assisted' : opt.ref.loadMode,
     lastSets: last,
     step: loadStep(lib?.equipment ?? [], lib?.plateLoading === 'both-sides'),
   });

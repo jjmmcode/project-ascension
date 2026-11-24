@@ -5,6 +5,7 @@ import { m004ExerciseSwap } from './004_exercise_swap';
 import { m005WorkoutEnergy } from './005_workout_energy';
 import { m006Penance } from './006_penance';
 import { m007Cardio } from './007_cardio';
+import { m008AssistanceFix } from './008_assistance_fix';
 
 export interface Migration {
   /** Entero creciente, sin huecos. Nunca modificar una migración ya publicada: crear una nueva. */
@@ -13,4 +14,4 @@ export interface Migration {
   statements: string[];
 }
 
-export const MIGRATIONS: Migration[] = [m001Initial, m002LoadModes, m003PlanAndProfile, m004ExerciseSwap, m005WorkoutEnergy, m006Penance, m007Cardio];
+export const MIGRATIONS: Migration[] = [m001Initial, m002LoadModes, m003PlanAndProfile, m004ExerciseSwap, m005WorkoutEnergy, m006Penance, m007Cardio, m008AssistanceFix];

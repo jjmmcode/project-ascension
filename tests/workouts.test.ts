@@ -6,7 +6,9 @@ import { migrate, profilesRepo } from '@/database';
 import { ensureExercise, workoutsRepo } from '@/database/repositories/workouts';
 import { awardXp, totalXp } from '@/services/xp';
 import { finishWorkout, weekStartKey, workoutsThisWeek, WorkoutValidationError } from '@/services/workoutSession';
-import { effectiveLoadKg, usableBodyweight, validateAssistance } from '@/features/training/load';
+import { effectiveLoadKg, setLoadMode, usableBodyweight, validateAssistance } from '@/features/training/load';
+import { MIGRATIONS } from '@/database/migrations';
+import { suggestionFor } from '@/services/plan';
 
 let db: ReturnType<typeof createTestDb>;
 let profileId: string;
@@ -114,6 +116,47 @@ describe('carga efectiva y dominadas asistidas', () => {
     expect(effectiveLoadKg('assisted', { weightKg: null, assistanceKg: 25, bodyweightKg: null })).toBeNull();
     expect(validateAssistance(90, 84)).toMatch(/asistencia/);
     expect(validateAssistance(20, 84)).toBeNull();
+  });
+
+  it('peso corporal admite asistencia por serie (resta, no suma)', () => {
+    expect(effectiveLoadKg('bodyweight', { weightKg: null, assistanceKg: 43.75, bodyweightKg: 86.6 })).toBeCloseTo(42.85);
+    expect(setLoadMode('bodyweight', { assistanceKg: 43.75 })).toBe('assisted');
+    expect(setLoadMode('bodyweight', { assistanceKg: null })).toBe('bodyweight');
+    expect(setLoadMode('bodyweight', { assistanceKg: 0 })).toBe('bodyweight');
+    expect(setLoadMode('external', { assistanceKg: 5 })).toBe('external');
+  });
+
+  it('dominadas con asistencia la última vez: la progresión baja la asistencia', () => {
+    const last = [1, 2, 3, 4].map((n) => ({ setNumber: n, repetitions: 10, weightKg: null, assistanceKg: 43.75, completed: true })) as never;
+    const sug = suggestionFor('ek-0087', '10', last);
+    expect(sug).toMatchObject({ kind: 'increase', field: 'assistance', fromKg: 43.75 });
+    expect((sug as { toKg: number }).toKg).toBeLessThan(43.75);
+  });
+
+  it('migración 8: pasa a asistencia los kg de dominadas/fondos del 23 y 24-11-2026', async () => {
+    const fresh = createTestDb();
+    await migrate(fresh, MIGRATIONS.slice(0, 7));
+    const pid = (await profilesRepo.create(fresh, { displayName: 'T', heightCm: 175 })).id;
+    const dips = { ...curl, id: 'ek-0054', name: 'Fondos', loadMode: 'bodyweight' as const, isBodyweight: true };
+    await ensureExercise(fresh, dips);
+    await ensureExercise(fresh, curl);
+    const mk = async (startedAt: string) => {
+      const w = await workoutsRepo.start(fresh, pid);
+      await fresh.runAsync('UPDATE workouts SET started_at = ? WHERE id = ?', [startedAt, w.id]);
+      const d = await workoutsRepo.addSet(fresh, w.id, dips.id, { repetitions: 10, weightKg: 30, bodyweightKg: 86.6 });
+      const c = await workoutsRepo.addSet(fresh, w.id, curl.id, { repetitions: 10, weightKg: 20 });
+      await fresh.runAsync("UPDATE workouts SET status = 'completed' WHERE id = ?", [w.id]);
+      return { d: d.id, c: c.id };
+    };
+    const monday = await mk('2026-11-23T22:10:00.000Z'); // lunes 19:10 Chile
+    const before = await mk('2026-11-20T22:10:00.000Z'); // viernes: no se toca
+    await migrate(fresh);
+    const row = (id: string) =>
+      fresh.getFirstAsync<{ weight_kg: number | null; assistance_kg: number | null }>('SELECT weight_kg, assistance_kg FROM workout_sets WHERE id = ?', [id]);
+    expect(await row(monday.d)).toEqual({ weight_kg: null, assistance_kg: 30 });
+    expect(await row(monday.c)).toEqual({ weight_kg: 20, assistance_kg: null });
+    expect(await row(before.d)).toEqual({ weight_kg: 30, assistance_kg: null });
+    fresh.close();
   });
 
   it('solo usa un peso confirmado de los últimos 30 días', () => {
